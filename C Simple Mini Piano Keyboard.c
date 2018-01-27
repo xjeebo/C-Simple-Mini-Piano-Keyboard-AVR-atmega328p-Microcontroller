@@ -1,17 +1,6 @@
-// ---------------------------------------------------------------------------
-// CpE 301
-// March 6, 2017
-// S. Harris
-// DA6_UARTexample_withInterrupts.c
-// ---------------------------------------------------------------------------
-//
-// This code displays the character typed by the user on the serial terminal.
-//
-// ---------------------------------------------------------------------------
-
 #include <avr/io.h>
 #define F_CPU 8000000	// Clock Speed
-#define C4 1911
+#define C4 1911	       // these are actual sound frequency values for each key
 #define D4 1703
 #define E4 1517
 #define F4 1432
@@ -36,41 +25,36 @@ void initUART();
 int main( void )
 {
 	settings8();
-	OCR1B = 255;
-	initUART();
-	while (1);									// Wait for interrupt
-	
+	OCR1B = 255;		  // acts as volume controller 
+	initUART();		 // initiate UART 
+	while (1);		// Wait for interrupt
 
 	return 0;
 }
 
 void settings8(){
-	TCCR1A |= _BV(COM1B1);  //Clear OC1A/OC1B on compare match
-	TCCR1B |= _BV(WGM13) |  _BV(CS11);	//mode 8, PWM, Phase and Frequency Correct (TOP value is ICR1)
-	DDRB = 0xFF; // make Port B an output
+	TCCR1A |= _BV(COM1B1);  				//Clear OC1A/OC1B on compare match
+	TCCR1B |= _BV(WGM13) |  _BV(CS11);		       //mode 8, PWM, Phase and Frequency Correct (TOP value is ICR1)
+	DDRB = 0xFF; 					      // make Port B an output
 }
 
 
-void initUART() {
+void initUART(){
 	unsigned int baudrate;
-
-	// Set baud rate:  UBRR = [F_CPU/(16*BAUD)] -1
+						          // Set baud rate:  UBRR = [F_CPU/(16*BAUD)] -1
 	baudrate = ((F_CPU/16)/BAUD) - 1;
 	UBRR0H = (unsigned char) (baudrate >> 8);
 	UBRR0L = (unsigned char) baudrate;
-
-	UCSR0B |= (1 << RXEN0) | (1 << TXEN0);		// Enable receiver and transmitter
-	UCSR0C |= (1 << UCSZ01) | (1 << UCSZ00);		// Set data frame: 8 data bits, 1 stop bit, no parity
-	UCSR0B |= (1 << RXCIE0);						// Enable receiver interrupt
-	sei();										// Enable global interrupts
-}
-
-// UART receiver interrupt handler
-ISR (USART_RX_vect)
-{
 	
+	UCSR0B |= (1 << RXEN0) | (1 << TXEN0);	    // Enable receiver and transmitter
+	UCSR0C |= (1 << UCSZ01) | (1 << UCSZ00);   // Set data frame: 8 data bits, 1 stop bit, no parity
+	UCSR0B |= (1 << RXCIE0);	          // Enable receiver interrupt
+	sei();					 // Enable global interrupts
+}
+					       // UART receiver interrupt handler
+ISR (USART_RX_vect){
 	unsigned char receivedChar;
-	receivedChar = UDR0;							// Read data from the RX buffer
+	receivedChar = UDR0;		    // Read data from the RX buffer
 
 	 if(receivedChar== 'a'){
 		ICR1 = C4; 
@@ -98,6 +82,5 @@ ISR (USART_RX_vect)
 	}
 	_delay_ms(100);
 	ICR1 = 0;
-
-	UDR0 = receivedChar;							// Write the data to the TX buffer
+	UDR0 = receivedChar;	 	// Write the data to the TX buffer
 }
